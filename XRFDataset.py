@@ -1,16 +1,18 @@
 import logging
-import torch
-import csv
-from torch.utils.data.dataset import Dataset, IterableDataset
-import pandas as pd
-import numpy as np
+
 import h5py
+import numpy as np
+import pandas as pd
+import torch
+from torch.utils.data.dataset import Dataset, IterableDataset
+
 log = logging.getLogger(__name__)
 
+
 class XRFBertDatasetNewMix(Dataset):
-    def __init__(self, file_path='./dataset/XRFDataset/', is_train=True, scene='dml'):
+    def __init__(self, file_path='/root/autodl-tmp/dataset/XRF_dataset/', is_train=True, scene='dml'):
         super(XRFBertDatasetNewMix, self).__init__()
-        self.word_list = np.load("./word2vec/bert_new_sentence_large_uncased.npy")
+        self.word_list = np.load('./word2vec/bert_new_sentence_large_uncased.npy')
         self.file_path = file_path
         self.is_train = is_train
         self.scene = scene
@@ -24,11 +26,11 @@ class XRFBertDatasetNewMix(Dataset):
             'file_name': list(),
             'label': list()
         }
-        self.path = self.file_path + self.scene + '_new_data/'
+        self.path = self.file_path
         for string in val_list:
             self.data['file_name'].append(string.split(',')[0])
             self.data['label'].append(int(string.split(',')[2]) - 1)
-        log.info("load XRF dataset")
+        log.info('load XRF dataset')
 
     def __len__(self):
         return len(self.data['label'])
@@ -44,30 +46,68 @@ class XRFBertDatasetNewMix(Dataset):
         return wifi_data, rfid_data, mmwave_data, label, vector
 
 
+class XRFMmwaveDataset(Dataset):
+    def __init__(self, file_path='/root/autodl-tmp/dataset/XRF_dataset/', is_train=True, scene='dml'):
+        super(XRFMmwaveDataset, self).__init__()
+        self.word_list = np.load('./word2vec/bert_new_sentence_large_uncased.npy')
+        self.file_path = file_path
+        self.is_train = is_train
+        self.scene = scene
 
-def load_rfid(filename, is_train, path='./dataset/XRFDataset/'):
+        if self.is_train:
+            self.file = self.file_path + self.scene + '_train.txt'
+        else:
+            self.file = self.file_path + self.scene + '_val.txt'
+
+        with open(self.file, 'r') as file:
+            val_list = file.readlines()
+
+        self.data = {
+            'file_name': list(),
+            'label': list()
+        }
+        self.path = self.file_path
+
+        for string in val_list:
+            self.data['file_name'].append(string.split(',')[0])
+            self.data['label'].append(int(string.split(',')[2]) - 1)
+
+        log.info('load mmWave-only XRF dataset')
+
+    def __len__(self):
+        return len(self.data['label'])
+
+    def __getitem__(self, idx):
+        file_name = self.data['file_name'][idx]
+        label = self.data['label'][idx]
+        vector = self.word_list[label]
+
+        mmwave_data = load_mmwave(file_name, self.is_train, path=self.path)
+        return mmwave_data, label, vector
+
+
+def load_rfid(filename, is_train, path='/root/autodl-tmp/dataset/XRF_dataset/'):
     if is_train:
         path = path + 'train_data/'
     else:
         path = path + 'test_data/'
-    record = np.load(path + 'RFID/' + filename + ".npy")
+    record = np.load(path + 'RFID/' + filename + '.npy')
     return torch.from_numpy(record).float()
 
 
-def load_wifi(filename, is_train, path='./dataset/XRFDataset/'):
+def load_wifi(filename, is_train, path='/root/autodl-tmp/dataset/XRF_dataset/'):
     if is_train:
         path = path + 'train_data/'
     else:
         path = path + 'test_data/'
-    record = np.load(path + 'WiFi/' + filename + ".npy")
+    record = np.load(path + 'WiFi/' + filename + '.npy')
     return torch.from_numpy(record).float()
 
 
-def load_mmwave(filename, is_train, path='./dataset/XRFDataset/'):
+def load_mmwave(filename, is_train, path='/root/autodl-tmp/dataset/XRF_dataset/'):
     if is_train:
         path = path + 'train_data/'
     else:
         path = path + 'test_data/'
-    mmWave_data = np.load(path + 'mmWave/' + filename + ".npy")
-    return torch.from_numpy(mmWave_data).float()
-
+    mmwave_data = np.load(path + 'mmWave/' + filename + '.npy')
+    return torch.from_numpy(mmwave_data).float()

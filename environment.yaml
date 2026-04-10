@@ -1,4 +1,4 @@
-name: rf_dml
+name: xrf
 channels:
   - pytorch
   - nvidia
@@ -252,7 +252,6 @@ dependencies:
     - pyyaml==6.0
     - scikit-learn==1.0.2
     - seaborn==0.12.2
-    - sklearn==0.0.post5
     - threadpoolctl==3.1.0
     - timm==0.6.13
     - tsnecuda==3.0.1
